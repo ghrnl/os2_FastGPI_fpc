@@ -4,17 +4,19 @@ program FastGPI;
 
 uses os2def, pmwin, pmgpi, pmbitmap, pmdev, doscalls;
 
+{$i pmgpi.inc}
+
 const
   NUM_MASSES_X = 320;
   NUM_MASSES_Y = 240; // product is larger than MAXINT
   
   npal = 33; // entries in palette
-  nrgb = 33; // entries in RGBmap
+  nrgb = 33; // entries in RGBmap, typ. equal to npal (!)
 
 type
   HDC  = cardinal; // ! longword
   TID  = cardinal; // ! longword
-  HMTX = longint;  // ! longint, not HTMX=longword
+  HMTX = longint;  // ! longint, not HMTX=longword
   Array3D = array of array of array of real;
 
 var
@@ -37,30 +39,10 @@ var
   aptl: array [0..3-1] of POINTL = ((x:0;y:0),(x:NUM_MASSES_X;y:NUM_MASSES_Y),(x:0;y:0));
 
   node: Array3D;
-  
-var
-  palette: array [0..npal-1] of longint;
 
 { void Model(ULONG dummy) }
 { Pascal: cardinal; cdecl;}
-function Model(dummy: pointer): cardinal;
-
-{ float *** Storage() }
-procedure Storage;
-{
-	float ***node;
-}
-	// Allocate node storage from the heap.
-	// if (!(node = New3DOffloat(0, 2, 0, NUM_MASSES_X-1, 0, NUM_MASSES_Y-1)))
-	//
-	//	printf("Can't allocate required memory from heap.\n");
-	//	exit(1);
-	//
-	// return(node);
-
-begin
-  setlength(Node,3,NUM_MASSES_X,NUM_MASSES_Y);
-end; {Storage}
+function Model(dummy: pointer): cardinal; cdecl;
 
 { void DisplayPlane(float **current) }
 
@@ -124,28 +106,22 @@ begin
       GpiSetColor(h_psMemory, x);
       coords.x := x;
       coords.y := y;
-      GpiSetPel(h_psMemory, coords);
+      GpiSetPel(h_psMemory, coords)
   end;
   
   bmp2data.cbFix := 16;
   GpiQueryBitmapInfoHeader(h_bm, bmp2data);
-  {
-  DosAllocMem((PPVOID)&pbmi, sizeof(BITMAPINFO2) +
-		(sizeof(RGB2) * (1 << bmp2data.cPlanes) *
-                (1 << bmp2data.cBitCount)),
-                PAG_COMMIT or PAG_READ or PAG_WRITE);
-                }
   DosAllocMem(pointer(pbmi), sizeof(BITMAPINFO2) +
 		(sizeof(RGB2) * (1 shl {<<} bmp2data.cPlanes) *
                 (1 shl {<<} bmp2data.cBitCount)),
-                PAG_COMMIT or PAG_READ or PAG_WRITE);              
+                PAG_COMMIT or PAG_READ or PAG_WRITE);
   with pbmi^ do begin
     cbFix           := bmp2data.cbFix;
     cx              := bmp2data.cx;
     cy              := bmp2data.cy;
     cPlanes         := bmp2data.cPlanes;
     cBitCount       := bmp2data.cBitCount;
-    { 16 byte limit }
+    { 16 byte boundary }
     ulCompression   := bmp2data.ulCompression;
     cbImage         := bmp2data.cbImage;
     cxResolution    := bmp2data.cxResolution;
@@ -167,7 +143,7 @@ begin
   // In Pascal this would be: for x:=0 to 32 do
   for x:=0 to nrgb-1 do
   begin
-    RGBmap[x] := Bitmap[x];
+    RGBmap[x] := Bitmap[x]
   end
 end; {PrepareGraphics}
 
@@ -183,7 +159,7 @@ begin
   PrepareGraphics(RGBmap);
 
   // Allocate node storage from the heap.
-  Storage;
+  setlength(Node,3,NUM_MASSES_X,NUM_MASSES_Y);
 
   // Start at time 0.
   count := 0;
@@ -259,16 +235,13 @@ window_func(HWND handle, ULONG mess, MPARAM parm1, MPARAM parm2) }
 function window_func(handle, mess: ULONG; parm1,parm2: pointer): pointer; cdecl; export;
 
 var
-//   palette: array [0..33-1] of longint = // cannot be cardinal
-
+  palette: array [0..npal-1] of longint; // cannot be cardinal
   i: integer;
   j: longint;
   sizl: SIZEL;
   
   { extra }
   xxx1: DevOpenStruc;
-  xxx2: TBitmapInfo2;
-  xxx3: byte;
 
 begin
   case mess of
@@ -297,11 +270,7 @@ begin
       bmih.cy := NUM_MASSES_Y;
       bmih.cPlanes := 1;
       bmih.cBitCount := 8;
-      //fillchar(xxx2,sizeof(xxx2),0);
-      //fillchar(xxx3,sizeof(xxx3),0);
-      // hbm = GpiCreateBitmap(hpsMemory, &bmih, 0L, NULL, NULL);
-      // h_bm := GpiCreateBitmap(h_psMemory, bmih, 0, nil {xxx3} {0}, {xxx2} nil);
-      h_bm := GpiCreateBitmap(h_psMemory, bmih, 0, xxx3 {0}, xxx2);
+      h_bm := GpiCreateBitmap(h_psMemory, bmih, 0, nil, nil);
       GpiSetBitmap(h_psMemory, h_bm);
 
       // Set up gray-scale palette for screen image.
