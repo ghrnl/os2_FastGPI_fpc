@@ -7,8 +7,9 @@ uses os2def, pmwin, pmgpi, pmbitmap, pmdev, doscalls;
 {$i pmgpi.inc}
 
 const
-  NUM_MASSES_X = 320;
-  NUM_MASSES_Y = 240; // product is larger than MAXINT
+  MULT=3; // default 1, max 4, depending on screensize
+  NUM_MASSES_X = MULT*320;
+  NUM_MASSES_Y = MULT*240; // product is larger than MAXINT
   
   npal = 33; // entries in palette
   nrgb = 33; // entries in RGBmap, typ. equal to npal (!)
@@ -263,7 +264,6 @@ begin
 		PU_PELS or GPIT_MICRO or GPIA_ASSOC or GPIF_DEFAULT);
 
       // Create bitmap for memory image of screen.
-      // memset(bmih, 0, sizeof(bmih));
       fillchar(bmih,sizeof(bmih),0); // swap args 2 & 3 wrt C
       bmih.cbFix := sizeof(bmih);
       bmih.cx := NUM_MASSES_X;
@@ -313,10 +313,10 @@ begin
         ModelSuspended := not ModelSuspended;
       end;
   
-  otherwise 
+  otherwise  // keep this for fast exit
       window_func:= WinDefWindowProc(handle, mess, parm1, parm2);
   end; {case}
-  window_func := nil; // FALSE;
+  window_func:= WinDefWindowProc(handle, mess, parm1, parm2);
 end; {window_func}
 
 
