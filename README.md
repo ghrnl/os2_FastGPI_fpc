@@ -6,3 +6,6 @@ FPC 3.2.2
 
 # C source
 On Github as DEV-SAMPLES-C-PM-FastGPI#dev-samples-pm-fastgpi
+
+# Credits
+To the original authors of the C version of FastGPI
